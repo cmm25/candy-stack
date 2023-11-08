@@ -231,7 +231,7 @@ while running:
 
         text_surface = candy_font.render(item.candy, True, BLACK)
         text_rect = text_surface.get_rect()
-        text_rect.center = (item.rect.x + 75, item.rect.y + 25)
+        text_rect.center =item.rect.center
         screen.blit(text_surface, text_rect)
         i += 1
 
@@ -247,10 +247,11 @@ while running:
         # Display the stack size
         stack_size_text = font.render(f"Stack size: {stack.size()}", True, BLACK)
         screen.blit(stack_size_text, (10, 10))
-
     if show_peek_result:
-        # Display the peek result
-        peek_result = font.render(f"Top item: {stack.peek()}" if not stack.is_empty() else "Top item: N/A", True, BLACK)
+        top_item = stack.peek() if not stack.is_empty() else None
+        peek_result_text = f"Top item: {top_item.candy if top_item else 'N/A'}"
+
+        peek_result = font.render(peek_result_text, True, BLACK)
         screen.blit(peek_result, (10, 50))
 
     if show_is_empty:
