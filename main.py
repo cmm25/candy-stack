@@ -1,6 +1,5 @@
 import sys
 from typing import TypeVar, Generic
-
 import pygame
 import random
 import tkinter as tk
@@ -29,6 +28,7 @@ pygame.display.set_caption("Stack Game")
 
 # Define font
 font = pygame.font.SysFont("Arial", 32)
+candy_font=pygame.font.SysFont("Arial", 20)
 
 # Define stack class
 T = TypeVar("T")
@@ -57,13 +57,14 @@ class Stack(Generic[T]):
 # Define PushedContainer class
 class PushedContainer:
     def __init__(self, candy, container_color, mid_bottom: tuple[float, float]):
-        self.size = 150, 50
+        self.size = 120, 27
         self.candy = candy
-        self.x = x
-        self.y = y
         self.height = height
         self.container_color = container_color
         self.rect = Rect((0, 0), self.size)
+        self.rect.midbottom = mid_bottom
+
+    def change_mid_bottom(self, mid_bottom: tuple[float, float]):
         self.rect.midbottom = mid_bottom
 
 
@@ -85,7 +86,7 @@ class Button:
         self.height = height
 
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height),border_radius=10)
         text_surface = font.render(self.text, True, BLACK)
         text_rect = text_surface.get_rect()
         text_rect.center = (self.x + self.width // 2, self.y + self.height // 2)
@@ -121,9 +122,10 @@ container_height = 450
 container_color = WHITE
 
 spring_image_rect.midbottom = Vector2(container_x + (container_width / 2), container_y + container_height)
+print(f"Initial midtop={spring_image_rect.midtop}")
 
-height = 10
-gap = 20
+height = 5
+gap = 10
 
 spring_shrink_rate = 0.9  # Rate at which the spring grows
 spring_grow_rate = 1 / spring_shrink_rate  # Rate at which the spring shrinks
@@ -181,6 +183,11 @@ while running:
                 candy = random.choice(candy_names)
                 container_color = random.choice(container_colors)
                 spring_image = pygame.transform.scale_by(spring_image, (1, spring_shrink_rate))
+                spring_image_rect = Rect(Vector2(0, 0),
+                                         spring_image.get_rect().size)
+                spring_image_rect.midbottom = Vector2(container_x + (container_width / 2),
+                                                      container_y + container_height)
+
 
                 if stack.is_empty():
                     pushed_container = PushedContainer(candy, container_color, spring_image_rect.midtop)
@@ -230,14 +237,21 @@ while running:
     y = container_y + container_height - height - gap
     width = container_width
 
+    i = 0
     for item in stack.items:
         # pygame.draw.rect(screen, item.container_color, (item.x, item.y, 150, 50))
-        pygame.draw.rect(screen, item.container_color, item.rect)
+        if i == 0:
+            item.change_mid_bottom(spring_image_rect.midtop)
+        else:
+            item.change_mid_bottom(stack.items[i - 1].rect.midtop)
 
-        text_surface = font.render(item.candy, True, BLACK)
+        pygame.draw.rect(screen, item.container_color, item.rect,border_thickness)
+
+        text_surface = candy_font.render(item.candy, True, BLACK)
         text_rect = text_surface.get_rect()
         text_rect.center = (item.rect.x + 75, item.rect.y + 25)
         screen.blit(text_surface, text_rect)
+        i += 1
 
     # Draw the buttons
     pop_button.draw(screen)
