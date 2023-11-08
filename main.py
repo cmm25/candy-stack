@@ -7,6 +7,8 @@ from tkinter import messagebox
 
 from pygame import Vector2, Rect
 
+from stack import Stack
+
 # Initialize pygame
 pygame.init()
 
@@ -27,31 +29,8 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Stack Game")
 
 # Define font
-font = pygame.font.SysFont("Arial", 32)
-candy_font=pygame.font.SysFont("Arial", 20)
-
-# Define stack class
-T = TypeVar("T")
-
-
-class Stack(Generic[T]):
-    def __init__(self):
-        self.items: list[T] = []
-
-    def is_empty(self):
-        return not bool(self.items)
-
-    def push(self, item):
-        self.items.append(item)
-
-    def pop(self):
-        return self.items.pop()
-
-    def peek(self):
-        return self.items[-1] if not self.is_empty() else None
-
-    def size(self):
-        return len(self.items)
+font = pygame.font.SysFont("Arial", 25)
+candy_font = pygame.font.SysFont("Arial", 20)
 
 
 # Define PushedContainer class
@@ -86,7 +65,7 @@ class Button:
         self.height = height
 
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height),border_radius=10)
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height), border_radius=10)
         text_surface = font.render(self.text, True, BLACK)
         text_rect = text_surface.get_rect()
         text_rect.center = (self.x + self.width // 2, self.y + self.height // 2)
@@ -105,10 +84,10 @@ fps = 60
 # Define a gap between the buttons row and the main container
 gap_between_buttons_and_container = 30
 
-# Reduce the gap between "Is Empty" output and the buttons by 5 pixels
-gap_between_is_empty_and_buttons = 25
-
 # Load the spring image
+original_image = pygame.image.load("spring.png").convert_alpha()
+original_image = pygame.transform.scale_by(original_image, (1, 0.85))
+
 spring_image = pygame.image.load("spring.png").convert_alpha()
 spring_image = pygame.transform.scale_by(spring_image, (1, 0.85))
 spring_image_rect = Rect(Vector2(0, 0),
@@ -130,6 +109,7 @@ gap = 10
 spring_shrink_rate = 0.9  # Rate at which the spring grows
 spring_grow_rate = 1 / spring_shrink_rate  # Rate at which the spring shrinks
 spring_height = spring_image.get_height() - 10
+resize_exponent = 1
 
 max_pushed_items = len(candy_names)
 
@@ -140,7 +120,7 @@ is_empty_button = Button("Is Empty", SILVER, 500, container_y - 60, 122, 50)
 length_button = Button("Length", ORANGE, 650, container_y - 60, 100, 50)
 
 # Define container colors for candies
-container_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255)]
+container_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255),(200,187,37),(252,53,143)]
 
 show_stack_size = False
 show_peek_result = False
@@ -166,28 +146,30 @@ while running:
             mouse_pos = pygame.mouse.get_pos()
             if pop_button.is_over(mouse_pos):
                 if not stack.is_empty():
+                    resize_exponent += -1
                     stack.pop()
                     show_stack_size = False
                     show_peek_result = False
                     show_is_empty = False
-                    if stack.is_empty():
-                        spring_image = pygame.image.load("spring.png").convert_alpha()
-                        spring_image = pygame.transform.scale_by(spring_image, (1, 0.85))
-                    else:
-                        spring_image = pygame.transform.smoothscale_by(spring_image,
-                                                                       (1, spring_grow_rate)).convert_alpha()
+                    spring_image = pygame.transform.scale_by(original_image, (1, spring_shrink_rate ** resize_exponent))
+                    # if stack.is_empty():
+                    #     spring_image = pygame.image.load("spring.png").convert_alpha()
+                    #     spring_image = pygame.transform.scale_by(spring_image, (1, 0.85))
+                    # else:
+                    #     spring_image = pygame.transform.smoothscale_by(spring_image,
+                    #                                                    (1, spring_grow_rate)).convert_alpha()
                 else:
                     show_alert("Container is empty!")
             if push_button.is_over(mouse_pos) and stack.size() < (container_height - gap) // (
                     height + gap) and stack.size() < max_pushed_items:
                 candy = random.choice(candy_names)
                 container_color = random.choice(container_colors)
-                spring_image = pygame.transform.scale_by(spring_image, (1, spring_shrink_rate))
+                spring_image = pygame.transform.scale_by(original_image, (1, spring_shrink_rate ** resize_exponent)).convert_alpha()
                 spring_image_rect = Rect(Vector2(0, 0),
                                          spring_image.get_rect().size)
                 spring_image_rect.midbottom = Vector2(container_x + (container_width / 2),
                                                       container_y + container_height)
-
+                resize_exponent += 1
 
                 if stack.is_empty():
                     pushed_container = PushedContainer(candy, container_color, spring_image_rect.midtop)
@@ -245,7 +227,7 @@ while running:
         else:
             item.change_mid_bottom(stack.items[i - 1].rect.midtop)
 
-        pygame.draw.rect(screen, item.container_color, item.rect,border_thickness)
+        pygame.draw.rect(screen, item.container_color, item.rect)
 
         text_surface = candy_font.render(item.candy, True, BLACK)
         text_rect = text_surface.get_rect()
