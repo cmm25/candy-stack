@@ -1,1 +1,1 @@
-##candy stack game using pygame and tkinter
+#candy stack game using pygame and tkinter
